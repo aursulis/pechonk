@@ -28,19 +28,34 @@ int wmain(int argc, wchar_t** argv)
     hr = data_source->openSession(session.put());
     THROW_IF_FAILED(hr);
 
-    auto enum_exports = wil::com_ptr<IDiaEnumSymbols>{};
-    hr = session->getExports(enum_exports.put());
+    auto enum_syms = wil::com_ptr<IDiaEnumSymbolsByAddr>{};
+    hr = session->getSymbolsByAddr(enum_syms.put());
     THROW_IF_FAILED(hr);
 
     auto symbol = wil::com_ptr<IDiaSymbol>{};
+    hr = enum_syms->symbolByAddr(1, 0, symbol.put());
+    THROW_IF_FAILED(hr);
+
+    auto rva = DWORD{};
+    hr = symbol->get_relativeVirtualAddress(&rva);
+    THROW_IF_FAILED(hr);
+
+    hr = enum_syms->symbolByRVA(rva, symbol.put());
+    THROW_IF_FAILED(hr);
+
     auto nfetched = ULONG{};
-    while (SUCCEEDED(hr = enum_exports->Next(1, symbol.put(), &nfetched)) && nfetched == 1) {
+    do {
         auto name = wil::unique_bstr{};
         hr = symbol->get_name(name.put());
         THROW_IF_FAILED(hr);
 
-        std::printf("%S\n", name.get());
-    }
+        rva = 0;
+        hr = symbol->get_relativeVirtualAddress(&rva);
+
+        std::printf("%S : %d\n", name.get(), rva);
+
+        hr = enum_syms->Next(1, symbol.put(), &nfetched);
+    } while (SUCCEEDED(hr) && nfetched == 1);
 
     return 0;
 }
