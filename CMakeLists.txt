@@ -28,6 +28,8 @@ target_include_directories(WIL
 )
 
 add_executable(pechonk
+  "src/dia_helpers.h"
+  "src/dia_helpers.cpp"
   "src/main.cpp"
 )
 target_link_libraries(pechonk

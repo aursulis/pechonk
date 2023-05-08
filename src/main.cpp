@@ -1,6 +1,7 @@
+#include "dia_helpers.h"
+
 #include <wil/com.h>
 #include <wil/resource.h>
-#include <wil/win32_helpers.h>
 #include <wil/result_macros.h>
 
 #include <dia2.h>
@@ -10,23 +11,8 @@
 
 int wmain(int argc, wchar_t** argv)
 {
-    // TODO: see if registration-free COM (some sort of sxs manifest) can help
-    // to make CoCreateInstance work directly here.
-    // auto source = wil::CoCreateInstance<IDiaDataSource>(CLSID_DiaSource, CLSCTX_INPROC_SERVER);
-
-    auto dia_mod = wil::unique_hmodule{ ::LoadLibraryW(L"msdia140.dll") };
-    THROW_LAST_ERROR_IF_NULL(dia_mod);
-
-    auto dia_GetClassObject = GetProcAddressByFunctionDeclaration(dia_mod.get(), DllGetClassObject);
-    THROW_LAST_ERROR_IF_NULL(dia_GetClassObject);
-
-    auto class_factory = wil::com_ptr<IClassFactory>{};
-    auto hr = dia_GetClassObject(CLSID_DiaSource, IID_IClassFactory, class_factory.put_void());
-    THROW_IF_FAILED(hr);
-
-    auto data_source = wil::com_ptr<IDiaDataSource>{};
-    hr = class_factory->CreateInstance(nullptr, IID_IDiaDataSource, data_source.put_void());
-    THROW_IF_FAILED(hr);
+    auto dia_ctx = pechonk::LoadDia();
+    auto& data_source = dia_ctx.data_source;
 
     if (argc != 2) {
         std::cerr << "Specify pdb file\n";
@@ -35,7 +21,7 @@ int wmain(int argc, wchar_t** argv)
 
     auto pdb_file = std::wstring{ argv[1] };
 
-    hr = data_source->loadDataFromPdb(pdb_file.c_str());
+    auto hr = data_source->loadDataFromPdb(pdb_file.c_str());
     THROW_IF_FAILED(hr);
 
     auto session = wil::com_ptr<IDiaSession>{};
