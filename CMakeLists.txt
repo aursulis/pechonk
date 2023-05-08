@@ -4,6 +4,10 @@ project(pechonk
   LANGUAGES CXX
 )
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo,Release>:ProgramDatabase>")
+add_compile_options(/W4 /WX)
+
 cmake_path(REMOVE_FILENAME CMAKE_VS_DEVENV_COMMAND OUTPUT_VARIABLE _dia_path)
 cmake_path(SET _dia_path NORMALIZE "${_dia_path}../../DIA SDK")
 
@@ -29,4 +33,9 @@ add_executable(pechonk
 target_link_libraries(pechonk
   WIL
   DIA
+)
+
+set(_dia_dll "${_dia_path}/bin/amd64/msdia140.dll")
+add_custom_command(TARGET pechonk POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_dia_dll} "$<TARGET_FILE_DIR:pechonk>/"
 )
